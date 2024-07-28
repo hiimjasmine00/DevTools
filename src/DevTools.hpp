@@ -46,6 +46,10 @@ protected:
     ImFont* m_boxFont      = nullptr;
     Ref<CCNode> m_selectedNode;
     std::vector<std::pair<CCNode*, HighlightMode>> m_toHighlight;
+    Ref<CCArray> m_selectedArr;
+    Ref<CCDictionary> m_selectedDict;
+    bool m_arrSelected = false;
+    bool m_dictSelected = false;
 
     void setupFonts();
     void setupPlatform();
@@ -67,6 +71,8 @@ protected:
     void drawPage(const char* name, void(DevTools::* fun)());
     void drawPages();
     void drawMemory();
+    void drawArray();
+    void drawDictionary();
     void draw(GLRenderCtx* ctx);
 
     void newFrame();
@@ -92,6 +98,8 @@ public:
     CCNode* getSelectedNode() const;
     void selectNode(CCNode* node);
     void highlightNode(CCNode* node, HighlightMode mode);
+    void selectArray(CCArray* arr);
+    void selectDictionary(CCDictionary* dict);
 
     void sceneChanged();
 

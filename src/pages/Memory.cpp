@@ -291,7 +291,9 @@ struct TextInfo {
     std::string data = "";
     void* ptr = nullptr;
     CCObject** arrayPtr = nullptr;
+    Ref<CCArray> array = nullptr;
     CCDictElement* dictPtr = nullptr;
+    Ref<CCDictionary> dict = nullptr;
 };
 
 void DevTools::drawMemory() {
@@ -364,20 +366,26 @@ void DevTools::drawMemory() {
                 auto objectPtr = reinterpret_cast<CCObject*>(*voidPtr);
                 auto formattedPtr = fmt::ptr(*voidPtr);
                 if (auto arr = typeinfo_cast<CCArray*>(objectPtr)) {
-                    texts.push_back(fmt::format("[{:04x}] cocos2d::CCArray ({}, size {}, data {})", offset, formattedPtr, arr->data->num, fmt::ptr(arr->data->arr)));
-                    textSaving.push_back(fmt::format("{:x}: a cocos2d::CCArray ({}, size {}, data {})", offset, formattedPtr, arr->data->num, fmt::ptr(arr->data->arr)));
+                    texts.push_back(fmt::format("[{:04x}] cocos2d::CCArray ({}, size {}, data {})",
+                        offset, formattedPtr, arr->data->num, fmt::ptr(arr->data->arr)));
+                    textSaving.push_back(fmt::format("{:x}: a cocos2d::CCArray ({}, size {}, data {})",
+                        offset, formattedPtr, arr->data->num, fmt::ptr(arr->data->arr)));
                     textInfo.push_back({
                         .type = TextType::Array,
                         .ptr = *voidPtr,
-                        .arrayPtr = arr->data->arr
+                        .arrayPtr = arr->data->arr,
+                        .array = arr
                     });
                 } else if (auto dict = typeinfo_cast<CCDictionary*>(objectPtr)) {
-                    texts.push_back(fmt::format("[{:04x}] cocos2d::CCDictionary ({}, size {}, data {})", offset, formattedPtr, HASH_COUNT(dict->m_pElements), fmt::ptr(dict->m_pElements)));
-                    textSaving.push_back(fmt::format("{:x}: d cocos2d::CCDictionary ({}, size {}, data {})", offset, formattedPtr, HASH_COUNT(dict->m_pElements), fmt::ptr(dict->m_pElements)));
+                    texts.push_back(fmt::format("[{:04x}] cocos2d::CCDictionary ({}, size {}, data {})",
+                        offset, formattedPtr, HASH_COUNT(dict->m_pElements), fmt::ptr(dict->m_pElements)));
+                    textSaving.push_back(fmt::format("{:x}: d cocos2d::CCDictionary ({}, size {}, data {})",
+                        offset, formattedPtr, HASH_COUNT(dict->m_pElements), fmt::ptr(dict->m_pElements)));
                     textInfo.push_back({
                         .type = TextType::Dictionary,
                         .ptr = *voidPtr,
-                        .dictPtr = dict->m_pElements
+                        .dictPtr = dict->m_pElements,
+                        .dict = dict
                     });
                 } else {
                     auto nodeID = std::string();
@@ -388,8 +396,8 @@ void DevTools::drawMemory() {
                         if (!foundID.empty()) nodeID = fmt::format(" \"{}\"", foundID);
                         type = "n";
                     }
-                    texts.push_back(fmt::format("[{:04x}] {} ({}){}", offset, *name, formattedPtr, nodeID.empty() ? "" : nodeID.c_str()));
-                    textSaving.push_back(fmt::format("{:x}: {} {} ({}){}", offset, type, *name, formattedPtr, nodeID.empty() ? "" : nodeID.c_str()));
+                    texts.push_back(fmt::format("[{:04x}] {} ({}){}", offset, *name, formattedPtr, nodeID));
+                    textSaving.push_back(fmt::format("{:x}: {} {} ({}){}", offset, type, *name, formattedPtr, nodeID));
                     textInfo.push_back({
                         .type = TextType::Pointer,
                         .ptr = *voidPtr
@@ -454,12 +462,129 @@ void DevTools::drawMemory() {
             if (ImGui::Button(fmt::format("Copy Array Address##{}", i).c_str())) {
                 clipboard::write(fmt::format("{}", fmt::ptr(info.arrayPtr)).c_str());
             }
+            if (info.array && info.array->data->num > 0) {
+                ImGui::SameLine();
+                if (ImGui::Button(fmt::format("+##array{}", i).c_str())) {
+                    selectArray(info.array);
+                }
+            }
         }
         else if (info.type == TextType::Dictionary) {
             ImGui::SameLine();
             if (ImGui::Button(fmt::format("Copy Dictionary Address##{}", i).c_str())) {
                 clipboard::write(fmt::format("{}", fmt::ptr(info.dictPtr)).c_str());
             }
+            if (info.dict && HASH_COUNT(info.dict->m_pElements) > 0) {
+                ImGui::SameLine();
+                if (ImGui::Button(fmt::format("+##dict{}", i).c_str())) {
+                    selectDictionary(info.dict);
+                }
+            }
+        }
+    }
+    ImGui::PopFont();
+}
+
+void DevTools::drawArray() {
+    if (!m_selectedArr) return;
+
+    ImGui::PushFont(m_monoFont);
+    for (int i = 0; i < m_selectedArr->data->num; ++i) {
+        SafePtr ptr = reinterpret_cast<uintptr_t>(m_selectedArr->data->arr) + i * sizeof(void*);
+        RttiInfo info(ptr.read_ptr());
+        auto name = info.class_name();
+        if (name) {
+            auto objectPtr = reinterpret_cast<CCObject**>(ptr.as_ptr());
+            auto formattedPtr = fmt::ptr(*objectPtr);
+            if (auto arr = typeinfo_cast<CCArray*>(*objectPtr)) {
+                ImGui::TextUnformatted(fmt::format("[{}] cocos2d::CCArray ({}, size {}, data {})",
+                    i, formattedPtr, arr->data->num, fmt::ptr(arr->data->arr)).c_str());
+            } else if (auto dict = typeinfo_cast<CCDictionary*>(*objectPtr)) {
+                ImGui::TextUnformatted(fmt::format("[{}] cocos2d::CCDictionary ({}, size {}, data {})",
+                    i, formattedPtr, HASH_COUNT(dict->m_pElements), fmt::ptr(dict->m_pElements)).c_str());
+            } else if (auto boolean = typeinfo_cast<CCBool*>(*objectPtr)) {
+                ImGui::TextUnformatted(fmt::format("[{}] cocos2d::CCBool ({}) {}",
+                    i, formattedPtr, boolean->getValue()).c_str());
+            } else if (auto string = typeinfo_cast<CCString*>(*objectPtr)) {
+                ImGui::TextUnformatted(fmt::format("[{}] cocos2d::CCString ({}) {}",
+                    i, formattedPtr, matjson::Value(std::string(string->getCString()).substr(0, 30)).dump(0)).c_str());
+            } else if (auto integer = typeinfo_cast<CCInteger*>(*objectPtr)) {
+                ImGui::TextUnformatted(fmt::format("[{}] cocos2d::CCInteger ({}) {}",
+                    i, formattedPtr, integer->getValue()).c_str());
+            } else if (auto floating = typeinfo_cast<CCFloat*>(*objectPtr)) {
+                ImGui::TextUnformatted(fmt::format("[{}] cocos2d::CCFloat ({}) {}",
+                    i, formattedPtr, floating->getValue()).c_str());
+            } else if (auto doubleprec = typeinfo_cast<CCDouble*>(*objectPtr)) {
+                ImGui::TextUnformatted(fmt::format("[{}] cocos2d::CCDouble ({}) {}",
+                    i, formattedPtr, doubleprec->getValue()).c_str());
+            } else {
+                auto nodeID = std::string();
+                if (auto node = typeinfo_cast<CCNode*>(*objectPtr)) {
+                    auto foundID = node->getID();
+                    if (!foundID.empty()) nodeID = fmt::format(" \"{}\"", foundID);
+                }
+                ImGui::TextUnformatted(fmt::format("[{}] {} ({}){}", i, *name, formattedPtr, nodeID).c_str());
+            }
+        } else {
+            ImGui::TextUnformatted(fmt::format("[{}] unknown ({})", i, fmt::ptr(*reinterpret_cast<void**>(ptr.as_ptr()))).c_str());
+        }
+        ImGui::SameLine();
+        if (ImGui::Button(fmt::format("Copy Pointer##{}", i).c_str())) {
+            clipboard::write(fmt::format("{}", fmt::ptr(*reinterpret_cast<void**>(ptr.as_ptr()))).c_str());
+        }
+    }
+    ImGui::PopFont();
+}
+
+void DevTools::drawDictionary() {
+    if (!m_selectedDict) return;
+
+    CCDictElement* elt, *tmp;
+    ImGui::PushFont(m_monoFont);
+    auto i = 0;
+    HASH_ITER(hh, m_selectedDict->m_pElements, elt, tmp) {
+        auto key = m_selectedDict->m_eDictType == cocos2d::CCDictionary::kCCDictStr ? elt->getStrKey() : fmt::format("{}", elt->getIntKey());
+        SafePtr ptr = reinterpret_cast<uintptr_t>(elt) + 256 + sizeof(intptr_t);
+        RttiInfo info(ptr.read_ptr());
+        auto name = info.class_name();
+        if (name) {
+            auto objectPtr = reinterpret_cast<CCObject**>(ptr.as_ptr());
+            auto formattedPtr = fmt::ptr(*objectPtr);
+            if (auto arr = typeinfo_cast<CCArray*>(*objectPtr)) {
+                ImGui::TextUnformatted(fmt::format("[{}] cocos2d::CCArray ({}, size {}, data {})",
+                    key, formattedPtr, arr->data->num, fmt::ptr(arr->data->arr)).c_str());
+            } else if (auto dict = typeinfo_cast<CCDictionary*>(*objectPtr)) {
+                ImGui::TextUnformatted(fmt::format("[{}] cocos2d::CCDictionary ({}, size {}, data {})",
+                    key, formattedPtr, HASH_COUNT(dict->m_pElements), fmt::ptr(dict->m_pElements)).c_str());
+            } else if (auto boolean = typeinfo_cast<CCBool*>(*objectPtr)) {
+                ImGui::TextUnformatted(fmt::format("[{}] cocos2d::CCBool ({}) {}",
+                    i, formattedPtr, boolean->getValue()).c_str());
+            } else if (auto string = typeinfo_cast<CCString*>(*objectPtr)) {
+                ImGui::TextUnformatted(fmt::format("[{}] cocos2d::CCString ({}) {}",
+                    i, formattedPtr, matjson::Value(std::string(string->getCString()).substr(0, 30)).dump(0)).c_str());
+            } else if (auto integer = typeinfo_cast<CCInteger*>(*objectPtr)) {
+                ImGui::TextUnformatted(fmt::format("[{}] cocos2d::CCInteger ({}) {}",
+                    i, formattedPtr, integer->getValue()).c_str());
+            } else if (auto floating = typeinfo_cast<CCFloat*>(*objectPtr)) {
+                ImGui::TextUnformatted(fmt::format("[{}] cocos2d::CCFloat ({}) {}",
+                    i, formattedPtr, floating->getValue()).c_str());
+            } else if (auto doubleprec = typeinfo_cast<CCDouble*>(*objectPtr)) {
+                ImGui::TextUnformatted(fmt::format("[{}] cocos2d::CCDouble ({}) {}",
+                    i, formattedPtr, doubleprec->getValue()).c_str());
+            } else {
+                auto nodeID = std::string();
+                if (auto node = typeinfo_cast<CCNode*>(*objectPtr)) {
+                    auto foundID = node->getID();
+                    if (!foundID.empty()) nodeID = fmt::format(" \"{}\"", foundID);
+                }
+                ImGui::TextUnformatted(fmt::format("[{}] {} ({}){}", key, *name, formattedPtr, nodeID).c_str());
+            }
+        } else {
+            ImGui::TextUnformatted(fmt::format("[{}] unknown ({})", key, fmt::ptr(*reinterpret_cast<void**>(ptr.as_ptr()))).c_str());
+        }
+        ImGui::SameLine();
+        if (ImGui::Button(fmt::format("Copy Pointer##{}", i++).c_str())) {
+            clipboard::write(fmt::format("{}", fmt::ptr(*reinterpret_cast<void**>(ptr.as_ptr()))).c_str());
         }
     }
     ImGui::PopFont();

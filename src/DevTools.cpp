@@ -84,6 +84,16 @@ void DevTools::highlightNode(CCNode* node, HighlightMode mode) {
     m_toHighlight.push_back({ node, mode });
 }
 
+void DevTools::selectArray(CCArray* arr) {
+    m_selectedArr = arr;
+    m_arrSelected = arr != nullptr;
+}
+
+void DevTools::selectDictionary(CCDictionary* dict) {
+    m_selectedDict = dict;
+    m_dictSelected = dict != nullptr;
+}
+
 void DevTools::drawPage(const char* name, void(DevTools::*pageFun)()) {
     if (ImGui::Begin(name, nullptr, ImGuiWindowFlags_HorizontalScrollbar)) {
         (this->*pageFun)();
@@ -158,6 +168,28 @@ void DevTools::drawPages() {
 
     if (m_settings.showMemoryViewer) {
         this->drawPage("Memory viewer", &DevTools::drawMemory);
+    }
+
+    if (!m_arrSelected && m_selectedArr) {
+        m_selectedArr = nullptr;
+    }
+
+    if (m_selectedArr) {
+        if (ImGui::Begin("Array Viewer", &m_arrSelected, ImGuiWindowFlags_HorizontalScrollbar)) {
+            DevTools::drawArray();
+        }
+        ImGui::End();
+    }
+
+    if (!m_dictSelected && m_selectedDict) {
+        m_selectedDict = nullptr;
+    }
+
+    if (m_selectedDict) {
+        if (ImGui::Begin("Dictionary Viewer", &m_dictSelected, ImGuiWindowFlags_HorizontalScrollbar)) {
+            DevTools::drawDictionary();
+        }
+        ImGui::End();
     }
 }
 
