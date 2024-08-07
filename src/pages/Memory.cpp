@@ -558,19 +558,19 @@ void DevTools::drawDictionary() {
                     key, formattedPtr, HASH_COUNT(dict->m_pElements), fmt::ptr(dict->m_pElements)).c_str());
             } else if (auto boolean = typeinfo_cast<CCBool*>(*objectPtr)) {
                 ImGui::TextUnformatted(fmt::format("[{}] cocos2d::CCBool ({}) {}",
-                    i, formattedPtr, boolean->getValue()).c_str());
+                    key, formattedPtr, boolean->getValue()).c_str());
             } else if (auto string = typeinfo_cast<CCString*>(*objectPtr)) {
                 ImGui::TextUnformatted(fmt::format("[{}] cocos2d::CCString ({}) {}",
-                    i, formattedPtr, matjson::Value(std::string(string->getCString()).substr(0, 30)).dump(0)).c_str());
+                    key, formattedPtr, matjson::Value(std::string(string->getCString()).substr(0, 30)).dump(0)).c_str());
             } else if (auto integer = typeinfo_cast<CCInteger*>(*objectPtr)) {
                 ImGui::TextUnformatted(fmt::format("[{}] cocos2d::CCInteger ({}) {}",
-                    i, formattedPtr, integer->getValue()).c_str());
+                    key, formattedPtr, integer->getValue()).c_str());
             } else if (auto floating = typeinfo_cast<CCFloat*>(*objectPtr)) {
                 ImGui::TextUnformatted(fmt::format("[{}] cocos2d::CCFloat ({}) {}",
-                    i, formattedPtr, floating->getValue()).c_str());
+                    key, formattedPtr, floating->getValue()).c_str());
             } else if (auto doubleprec = typeinfo_cast<CCDouble*>(*objectPtr)) {
                 ImGui::TextUnformatted(fmt::format("[{}] cocos2d::CCDouble ({}) {}",
-                    i, formattedPtr, doubleprec->getValue()).c_str());
+                    key, formattedPtr, doubleprec->getValue()).c_str());
             } else {
                 auto nodeID = std::string();
                 if (auto node = typeinfo_cast<CCNode*>(*objectPtr)) {
