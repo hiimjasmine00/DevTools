@@ -6,6 +6,8 @@
 #include <algorithm>
 #include <span>
 #include <fmt/chrono.h>
+#include <Geode/utils/string.hpp>
+#include <Geode/utils/ranges.hpp>
 
 using namespace geode::prelude;
 
@@ -367,9 +369,9 @@ void DevTools::drawMemory() {
                 auto formattedPtr = fmt::ptr(*voidPtr);
                 if (auto arr = typeinfo_cast<CCArray*>(objectPtr)) {
                     texts.push_back(fmt::format("[{:04x}] cocos2d::CCArray ({}, size {}, data {})",
-                        offset, formattedPtr, arr->data->num, fmt::ptr(arr->data->arr)));
+                        offset, formattedPtr, arr->count(), fmt::ptr(arr->data->arr)));
                     textSaving.push_back(fmt::format("{:x}: a cocos2d::CCArray ({}, size {}, data {})",
-                        offset, formattedPtr, arr->data->num, fmt::ptr(arr->data->arr)));
+                        offset, formattedPtr, arr->count(), fmt::ptr(arr->data->arr)));
                     textInfo.push_back({
                         .type = TextType::Array,
                         .ptr = *voidPtr,
@@ -378,9 +380,9 @@ void DevTools::drawMemory() {
                     });
                 } else if (auto dict = typeinfo_cast<CCDictionary*>(objectPtr)) {
                     texts.push_back(fmt::format("[{:04x}] cocos2d::CCDictionary ({}, size {}, data {})",
-                        offset, formattedPtr, HASH_COUNT(dict->m_pElements), fmt::ptr(dict->m_pElements)));
+                        offset, formattedPtr, dict->count(), fmt::ptr(dict->m_pElements)));
                     textSaving.push_back(fmt::format("{:x}: d cocos2d::CCDictionary ({}, size {}, data {})",
-                        offset, formattedPtr, HASH_COUNT(dict->m_pElements), fmt::ptr(dict->m_pElements)));
+                        offset, formattedPtr, dict->count(), fmt::ptr(dict->m_pElements)));
                     textInfo.push_back({
                         .type = TextType::Dictionary,
                         .ptr = *voidPtr,
@@ -388,11 +390,10 @@ void DevTools::drawMemory() {
                         .dict = dict
                     });
                 } else {
-                    auto nodeID = std::string();
-                    auto foundID = std::string();
+                    std::string nodeID;
                     auto type = "p";
                     if (auto node = typeinfo_cast<CCNode*>(objectPtr)) {
-                        foundID = node->getID();
+                        auto foundID = node->getID();
                         if (!foundID.empty()) nodeID = fmt::format(" \"{}\"", foundID);
                         type = "n";
                     }
@@ -406,15 +407,13 @@ void DevTools::drawMemory() {
             } else if (auto maybeStr = findStdString(ptr); maybeStr) {
                 auto str = maybeStr->substr(0, 30);
                 // escapes new lines and stuff for me :3
-                if (auto fmted = matjson::Value(std::string(str)).dump(0)) {
-                    auto fmtedStr = fmted.unwrap();
-                    texts.push_back(fmt::format("[{:04x}] maybe std::string {}, {}", offset, maybeStr->size(), fmtedStr));
-                    textSaving.push_back(fmt::format("{:x}: s {}", offset, fmtedStr));
-                    textInfo.push_back({
-                        .type = TextType::String,
-                        .str = std::string(maybeStr->data())
-                    });
-                }
+                auto fmted = matjson::Value(std::string(str)).dump(0);
+                texts.push_back(fmt::format("[{:04x}] maybe std::string {}, {}", offset, maybeStr->size(), fmted));
+                textSaving.push_back(fmt::format("{:x}: s {}", offset, fmted));
+                textInfo.push_back({
+                    .type = TextType::String,
+                    .str = std::string(maybeStr->data())
+                });
             } else if (auto valueOpt = ptr.read_opt<uintptr_t>()) {
                 auto value = *valueOpt;
                 auto data = std::span(reinterpret_cast<uint8_t*>(&value), sizeof(void*));
@@ -509,7 +508,7 @@ void DevTools::drawArray() {
                     i, formattedPtr, boolean->getValue()).c_str());
             } else if (auto string = typeinfo_cast<CCString*>(*objectPtr)) {
                 ImGui::TextUnformatted(fmt::format("[{}] cocos2d::CCString ({}) {}",
-                    i, formattedPtr, matjson::Value(std::string(string->getCString()).substr(0, 30)).dump(0).unwrapOr("\"\"")).c_str());
+                    i, formattedPtr, matjson::Value(std::string(string->getCString()).substr(0, 30)).dump(0)).c_str());
             } else if (auto integer = typeinfo_cast<CCInteger*>(*objectPtr)) {
                 ImGui::TextUnformatted(fmt::format("[{}] cocos2d::CCInteger ({}) {}",
                     i, formattedPtr, integer->getValue()).c_str());
@@ -563,7 +562,7 @@ void DevTools::drawDictionary() {
                     key, formattedPtr, boolean->getValue()).c_str());
             } else if (auto string = typeinfo_cast<CCString*>(*objectPtr)) {
                 ImGui::TextUnformatted(fmt::format("[{}] cocos2d::CCString ({}) {}",
-                    key, formattedPtr, matjson::Value(std::string(string->getCString()).substr(0, 30)).dump(0).unwrapOr("\"\"")).c_str());
+                    key, formattedPtr, matjson::Value(std::string(string->getCString()).substr(0, 30)).dump(0)).c_str());
             } else if (auto integer = typeinfo_cast<CCInteger*>(*objectPtr)) {
                 ImGui::TextUnformatted(fmt::format("[{}] cocos2d::CCInteger ({}) {}",
                     key, formattedPtr, integer->getValue()).c_str());
