@@ -69,6 +69,19 @@ void DevTools::drawSettings() {
             "Shows the memory viewer window."
         );
     }
+    ImGui::Checkbox("Show Array Viewer", &m_settings.showArrayViewer);
+    if (ImGui::IsItemHovered()) {
+        ImGui::SetTooltip(
+            "Shows the array viewer window."
+        );
+    }
+    ImGui::Checkbox("Show Dictionary Viewer", &m_settings.showDictionaryViewer);
+    if (ImGui::IsItemHovered()) {
+        ImGui::SetTooltip(
+            "Shows the dictionary viewer window."
+        );
+    }
+
     ImGui::PopStyleVar();
 
     ImGui::Separator();

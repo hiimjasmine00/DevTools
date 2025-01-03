@@ -27,6 +27,8 @@ struct Settings {
     bool orderChildren = true;
     bool advancedSettings = false;
     bool showMemoryViewer = false;
+    bool showArrayViewer = false;
+    bool showDictionaryViewer = false;
     std::string theme = DARK_THEME;
 };
 
@@ -46,10 +48,6 @@ protected:
     ImFont* m_boxFont      = nullptr;
     Ref<CCNode> m_selectedNode;
     std::vector<std::pair<CCNode*, HighlightMode>> m_toHighlight;
-    Ref<CCArray> m_selectedArr;
-    Ref<CCDictionary> m_selectedDict;
-    bool m_arrSelected = false;
-    bool m_dictSelected = false;
 
     void setupFonts();
     void setupPlatform();
@@ -98,8 +96,6 @@ public:
     CCNode* getSelectedNode() const;
     void selectNode(CCNode* node);
     void highlightNode(CCNode* node, HighlightMode mode);
-    void selectArray(CCArray* arr);
-    void selectDictionary(CCDictionary* dict);
 
     void sceneChanged();
 

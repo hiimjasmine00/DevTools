@@ -25,6 +25,8 @@ struct matjson::Serialize<Settings> {
             .orderChildren = value["order_children"].asBool().unwrapOr(std::move(defaults.orderChildren)),
             .advancedSettings = value["advanced_settings"].asBool().unwrapOr(std::move(defaults.advancedSettings)),
             .showMemoryViewer = value["show_memory_viewer"].asBool().unwrapOr(std::move(defaults.showMemoryViewer)),
+            .showArrayViewer = value["show_array_viewer"].asBool().unwrapOr(std::move(defaults.showArrayViewer)),
+            .showDictionaryViewer = value["show_dictionary_viewer"].asBool().unwrapOr(std::move(defaults.showDictionaryViewer)),
             .theme = value["theme"].asString().unwrapOr(std::move(defaults.theme)),
         });
     }
@@ -39,6 +41,8 @@ struct matjson::Serialize<Settings> {
             { "order_children", settings.orderChildren },
             { "advanced_settings", settings.advancedSettings },
             { "show_memory_viewer", settings.showMemoryViewer },
+            { "show_array_viewer", settings.showArrayViewer },
+            { "show_dictionary_viewer", settings.showDictionaryViewer },
             { "theme", settings.theme },
         });
     }
@@ -80,16 +84,6 @@ void DevTools::selectNode(CCNode* node) {
 
 void DevTools::highlightNode(CCNode* node, HighlightMode mode) {
     m_toHighlight.push_back({ node, mode });
-}
-
-void DevTools::selectArray(CCArray* arr) {
-    m_selectedArr = arr;
-    m_arrSelected = arr != nullptr;
-}
-
-void DevTools::selectDictionary(CCDictionary* dict) {
-    m_selectedDict = dict;
-    m_dictSelected = dict != nullptr;
 }
 
 void DevTools::drawPage(const char* name, void(DevTools::*pageFun)()) {
@@ -168,26 +162,12 @@ void DevTools::drawPages() {
         this->drawPage("Memory viewer", &DevTools::drawMemory);
     }
 
-    if (!m_arrSelected && m_selectedArr) {
-        m_selectedArr = nullptr;
+    if (m_settings.showArrayViewer) {
+        this->drawPage("Array Viewer", &DevTools::drawArray);
     }
 
-    if (m_selectedArr) {
-        if (ImGui::Begin("Array Viewer", &m_arrSelected, ImGuiWindowFlags_HorizontalScrollbar)) {
-            DevTools::drawArray();
-        }
-        ImGui::End();
-    }
-
-    if (!m_dictSelected && m_selectedDict) {
-        m_selectedDict = nullptr;
-    }
-
-    if (m_selectedDict) {
-        if (ImGui::Begin("Dictionary Viewer", &m_dictSelected, ImGuiWindowFlags_HorizontalScrollbar)) {
-            DevTools::drawDictionary();
-        }
-        ImGui::End();
+    if (m_settings.showDictionaryViewer) {
+        this->drawPage("Dictionary Viewer", &DevTools::drawDictionary);
     }
 }
 
