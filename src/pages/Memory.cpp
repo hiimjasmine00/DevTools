@@ -368,10 +368,8 @@ void DevTools::drawMemory() {
                 auto objectPtr = reinterpret_cast<CCObject*>(*voidPtr);
                 auto formattedPtr = fmt::ptr(*voidPtr);
                 if (auto arr = typeinfo_cast<CCArray*>(objectPtr)) {
-                    texts.push_back(fmt::format("[{:04x}] cocos2d::CCArray ({}, size {}, data {})",
-                        offset, formattedPtr, arr->count(), fmt::ptr(arr->data->arr)));
-                    textSaving.push_back(fmt::format("{:x}: a cocos2d::CCArray ({}, size {}, data {})",
-                        offset, formattedPtr, arr->count(), fmt::ptr(arr->data->arr)));
+                    texts.push_back(fmt::format("[{:04x}] cocos2d::CCArray ({}, size {}, data {})", offset, formattedPtr, arr->count(), fmt::ptr(arr->data->arr)));
+                    textSaving.push_back(fmt::format("{:x}: a cocos2d::CCArray ({}, size {}, data {})", offset, formattedPtr, arr->count(), fmt::ptr(arr->data->arr)));
                     textInfo.push_back({
                         .type = TextType::Array,
                         .ptr = *voidPtr,
@@ -379,10 +377,8 @@ void DevTools::drawMemory() {
                         .array = arr
                     });
                 } else if (auto dict = typeinfo_cast<CCDictionary*>(objectPtr)) {
-                    texts.push_back(fmt::format("[{:04x}] cocos2d::CCDictionary ({}, size {}, data {})",
-                        offset, formattedPtr, dict->count(), fmt::ptr(dict->m_pElements)));
-                    textSaving.push_back(fmt::format("{:x}: d cocos2d::CCDictionary ({}, size {}, data {})",
-                        offset, formattedPtr, dict->count(), fmt::ptr(dict->m_pElements)));
+                    texts.push_back(fmt::format("[{:04x}] cocos2d::CCDictionary ({}, size {}, data {})", offset, formattedPtr, dict->count(), fmt::ptr(dict->m_pElements)));
+                    textSaving.push_back(fmt::format("{:x}: d cocos2d::CCDictionary ({}, size {}, data {})", offset, formattedPtr, dict->count(), fmt::ptr(dict->m_pElements)));
                     textInfo.push_back({
                         .type = TextType::Dictionary,
                         .ptr = *voidPtr,
