@@ -8,7 +8,6 @@
 #include <Geode/utils/addresser.hpp>
 #include <Geode/loader/Loader.hpp>
 #include <Geode/loader/ModMetadata.hpp>
-#include <unordered_map>
 
 using namespace geode::prelude;
 
@@ -27,9 +26,11 @@ struct Settings {
     bool orderChildren = true;
     bool advancedSettings = false;
     bool showMemoryViewer = false;
+    bool showModGraph = false;
     bool showArrayViewer = false;
     bool showDictionaryViewer = false;
     std::string theme = DARK_THEME;
+    ccColor4B themeColor = {2, 119, 189, 255};
 };
 
 class DevTools {
@@ -46,6 +47,7 @@ protected:
     ImFont* m_smallFont    = nullptr;
     ImFont* m_monoFont     = nullptr;
     ImFont* m_boxFont      = nullptr;
+    CCTexture2D* m_fontTexture = nullptr;
     Ref<CCNode> m_selectedNode;
     std::vector<std::pair<CCNode*, HighlightMode>> m_toHighlight;
 
@@ -85,7 +87,7 @@ public:
     static DevTools* get();
     void loadSettings();
     void saveSettings();
-
+    Settings getSettings();
     bool shouldUseGDWindow() const;
 
     bool shouldPopGame() const;
